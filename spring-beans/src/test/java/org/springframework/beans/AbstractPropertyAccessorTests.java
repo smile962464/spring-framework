@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,9 +36,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.logging.LogFactory;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.beans.propertyeditors.CustomNumberEditor;
@@ -60,11 +58,18 @@ import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.util.StopWatch;
 import org.springframework.util.StringUtils;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Shared tests for property accessors.
@@ -78,9 +83,6 @@ import static org.junit.Assert.*;
  * @author Stephane Nicoll
  */
 public abstract class AbstractPropertyAccessorTests {
-
-	@Rule
-	public final ExpectedException thrown = ExpectedException.none();
 
 
 	protected abstract AbstractPropertyAccessor createAccessor(Object target);
@@ -125,8 +127,8 @@ public abstract class AbstractPropertyAccessorTests {
 	public void isReadablePropertyNull() {
 		AbstractPropertyAccessor accessor = createAccessor(new NoRead());
 
-		thrown.expect(IllegalArgumentException.class);
-		accessor.isReadableProperty(null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				accessor.isReadableProperty(null));
 	}
 
 	@Test
@@ -140,8 +142,8 @@ public abstract class AbstractPropertyAccessorTests {
 	public void isWritablePropertyNull() {
 		AbstractPropertyAccessor accessor = createAccessor(new NoRead());
 
-		thrown.expect(IllegalArgumentException.class);
-		accessor.isWritableProperty(null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				accessor.isWritableProperty(null));
 	}
 
 	@Test
@@ -289,8 +291,8 @@ public abstract class AbstractPropertyAccessorTests {
 		Person target = createPerson("John", "London", "UK");
 		AbstractPropertyAccessor accessor = createAccessor(target);
 
-		thrown.expect(NotReadablePropertyException.class);
-		accessor.getPropertyValue("address.bar");
+		assertThatExceptionOfType(NotReadablePropertyException.class).isThrownBy(() ->
+				accessor.getPropertyValue("address.bar"));
 	}
 
 	@Test
@@ -1140,6 +1142,7 @@ public abstract class AbstractPropertyAccessorTests {
 	}
 
 	@Test
+	@SuppressWarnings("rawtypes")
 	public void setGenericArrayProperty() {
 		SkipReaderStub target = new SkipReaderStub();
 		AbstractPropertyAccessor accessor = createAccessor(target);
@@ -1457,7 +1460,7 @@ public abstract class AbstractPropertyAccessorTests {
 		assertEquals("rob", ((TestBean) target.getMap().get(2)).getName());
 	}
 
-	@SuppressWarnings("unchecked") // must work with raw map in this test
+	@SuppressWarnings({ "unchecked", "rawtypes" }) // must work with raw map in this test
 	@Test
 	public void setRawMapPropertyWithNoEditorRegistered() {
 		IndexedTestBean target = new IndexedTestBean();
@@ -1563,8 +1566,8 @@ public abstract class AbstractPropertyAccessorTests {
 		Person target = createPerson("John", "Paris", "FR");
 		AbstractPropertyAccessor accessor = createAccessor(target);
 
-		thrown.expect(NotWritablePropertyException.class);
-		accessor.setPropertyValue("address.bar", "value");
+		assertThatExceptionOfType(NotWritablePropertyException.class).isThrownBy(() ->
+				accessor.setPropertyValue("address.bar", "value"));
 	}
 
 	@Test
@@ -1599,6 +1602,7 @@ public abstract class AbstractPropertyAccessorTests {
 		TestBean tb7 = ((TestBean) target.getSet().toArray()[1]);
 		TestBean tb4 = ((TestBean) target.getMap().get("key1"));
 		TestBean tb5 = ((TestBean) target.getMap().get("key.3"));
+		TestBean tb8 = ((TestBean) target.getMap().get("key5[foo]"));
 		assertEquals("name0", tb0.getName());
 		assertEquals("name1", tb1.getName());
 		assertEquals("name2", tb2.getName());
@@ -1607,6 +1611,7 @@ public abstract class AbstractPropertyAccessorTests {
 		assertEquals("name7", tb7.getName());
 		assertEquals("name4", tb4.getName());
 		assertEquals("name5", tb5.getName());
+		assertEquals("name8", tb8.getName());
 		assertEquals("name0", accessor.getPropertyValue("array[0].name"));
 		assertEquals("name1", accessor.getPropertyValue("array[1].name"));
 		assertEquals("name2", accessor.getPropertyValue("list[0].name"));
@@ -1619,6 +1624,9 @@ public abstract class AbstractPropertyAccessorTests {
 		assertEquals("name5", accessor.getPropertyValue("map[\"key.3\"].name"));
 		assertEquals("nameX", accessor.getPropertyValue("map[key4][0].name"));
 		assertEquals("nameY", accessor.getPropertyValue("map[key4][1].name"));
+		assertEquals("name8", accessor.getPropertyValue("map[key5[foo]].name"));
+		assertEquals("name8", accessor.getPropertyValue("map['key5[foo]'].name"));
+		assertEquals("name8", accessor.getPropertyValue("map[\"key5[foo]\"].name"));
 
 		MutablePropertyValues pvs = new MutablePropertyValues();
 		pvs.add("array[0].name", "name5");
@@ -1631,6 +1639,7 @@ public abstract class AbstractPropertyAccessorTests {
 		pvs.add("map['key.3'].name", "name0");
 		pvs.add("map[key4][0].name", "nameA");
 		pvs.add("map[key4][1].name", "nameB");
+		pvs.add("map[key5[foo]].name", "name10");
 		accessor.setPropertyValues(pvs);
 		assertEquals("name5", tb0.getName());
 		assertEquals("name4", tb1.getName());
@@ -1648,6 +1657,7 @@ public abstract class AbstractPropertyAccessorTests {
 		assertEquals("name0", accessor.getPropertyValue("map['key.3'].name"));
 		assertEquals("nameA", accessor.getPropertyValue("map[key4][0].name"));
 		assertEquals("nameB", accessor.getPropertyValue("map[key4][1].name"));
+		assertEquals("name10", accessor.getPropertyValue("map[key5[foo]].name"));
 	}
 
 	@Test
@@ -1778,6 +1788,7 @@ public abstract class AbstractPropertyAccessorTests {
 	}
 
 
+	@SuppressWarnings("unused")
 	private static class Simple {
 
 		private String name;
@@ -1806,6 +1817,7 @@ public abstract class AbstractPropertyAccessorTests {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static class Person {
 		private String name;
 
@@ -1836,6 +1848,7 @@ public abstract class AbstractPropertyAccessorTests {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static class Address {
 		private String city;
 
@@ -1867,6 +1880,7 @@ public abstract class AbstractPropertyAccessorTests {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static class Country {
 		private String name;
 
@@ -1895,7 +1909,7 @@ public abstract class AbstractPropertyAccessorTests {
 		}
 	}
 
-	@SuppressWarnings("unused")
+	@SuppressWarnings({ "unused", "rawtypes" })
 	private static class Foo {
 
 		private List list;
@@ -2191,10 +2205,12 @@ public abstract class AbstractPropertyAccessorTests {
 		public SkipReaderStub() {
 		}
 
+		@SuppressWarnings("unchecked")
 		public SkipReaderStub(T... items) {
 			this.items = items;
 		}
 
+		@SuppressWarnings("unchecked")
 		public void setItems(T... items) {
 			this.items = items;
 		}
@@ -2228,6 +2244,7 @@ public abstract class AbstractPropertyAccessorTests {
 		}
 
 		@Override
+		@SuppressWarnings("unchecked")
 		public Spr13837Bean setSomething(final Integer something) {
 			this.something = something;
 			return this;

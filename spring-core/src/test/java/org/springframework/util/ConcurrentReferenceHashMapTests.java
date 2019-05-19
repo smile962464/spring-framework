@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,9 +30,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import org.springframework.lang.Nullable;
 import org.springframework.util.ConcurrentReferenceHashMap.Entry;
@@ -41,8 +39,13 @@ import org.springframework.util.ConcurrentReferenceHashMap.Restructure;
 import org.springframework.util.comparator.ComparableComparator;
 import org.springframework.util.comparator.NullSafeComparator;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Tests for {@link ConcurrentReferenceHashMap}.
@@ -53,9 +56,6 @@ public class ConcurrentReferenceHashMapTests {
 
 	private static final Comparator<? super String> NULL_SAFE_STRING_SORT = new NullSafeComparator<String>(
 			new ComparableComparator<String>(), true);
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	private TestWeakConcurrentCache<Integer, String> map = new TestWeakConcurrentCache<>();
 
@@ -85,7 +85,7 @@ public class ConcurrentReferenceHashMapTests {
 	}
 
 	@Test
-	public void shouldCreateWithInitialCapacityAndConcurrenyLevel() {
+	public void shouldCreateWithInitialCapacityAndConcurrentLevel() {
 		ConcurrentReferenceHashMap<Integer, String> map = new ConcurrentReferenceHashMap<>(16, 2);
 		assertThat(map.getSegmentsSize(), is(2));
 		assertThat(map.getSegment(0).getSize(), is(8));
@@ -105,25 +105,25 @@ public class ConcurrentReferenceHashMapTests {
 	@Test
 	public void shouldNeedNonNegativeInitialCapacity() {
 		new ConcurrentReferenceHashMap<Integer, String>(0, 1);
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Initial capacity must not be negative");
-		new TestWeakConcurrentCache<Integer, String>(-1, 1);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				new TestWeakConcurrentCache<Integer, String>(-1, 1))
+			.withMessageContaining("Initial capacity must not be negative");
 	}
 
 	@Test
 	public void shouldNeedPositiveLoadFactor() {
 		new ConcurrentReferenceHashMap<Integer, String>(0, 0.1f, 1);
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Load factor must be positive");
-		new TestWeakConcurrentCache<Integer, String>(0, 0.0f, 1);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				new TestWeakConcurrentCache<Integer, String>(0, 0.0f, 1))
+			.withMessageContaining("Load factor must be positive");
 	}
 
 	@Test
 	public void shouldNeedPositiveConcurrencyLevel() {
 		new ConcurrentReferenceHashMap<Integer, String>(1, 1);
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Concurrency level must be positive");
-		new TestWeakConcurrentCache<Integer, String>(1, 0);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				new TestWeakConcurrentCache<Integer, String>(1, 0))
+			.withMessageContaining("Concurrency level must be positive");
 	}
 
 	@Test
@@ -173,11 +173,11 @@ public class ConcurrentReferenceHashMapTests {
 	}
 
 	@Test
-	public void shouldApplySupplimentalHash() {
+	public void shouldApplySupplementalHash() {
 		Integer key = 123;
 		this.map.put(key, "123");
-		assertThat(this.map.getSupplimentalHash(), is(not(key.hashCode())));
-		assertThat(this.map.getSupplimentalHash() >> 30 & 0xFF, is(not(0)));
+		assertThat(this.map.getSupplementalHash(), is(not(key.hashCode())));
+		assertThat(this.map.getSupplementalHash() >> 30 & 0xFF, is(not(0)));
 	}
 
 	@Test
@@ -240,7 +240,7 @@ public class ConcurrentReferenceHashMapTests {
 	}
 
 	@Test
-	public void shouldPergeOnPut() {
+	public void shouldPurgeOnPut() {
 		this.map = new TestWeakConcurrentCache<>(1, 0.75f, 1);
 		for (int i = 1; i <= 5; i++) {
 			this.map.put(i, String.valueOf(i));
@@ -559,7 +559,7 @@ public class ConcurrentReferenceHashMapTests {
 
 	private static class TestWeakConcurrentCache<K, V> extends ConcurrentReferenceHashMap<K, V> {
 
-		private int supplimentalHash;
+		private int supplementalHash;
 
 		private final LinkedList<MockReference<K, V>> queue = new LinkedList<>();
 
@@ -587,12 +587,12 @@ public class ConcurrentReferenceHashMapTests {
 				return super.getHash(o);
 			}
 			// For testing we want more control of the hash
-			this.supplimentalHash = super.getHash(o);
+			this.supplementalHash = super.getHash(o);
 			return o == null ? 0 : o.hashCode();
 		}
 
-		public int getSupplimentalHash() {
-			return this.supplimentalHash;
+		public int getSupplementalHash() {
+			return this.supplementalHash;
 		}
 
 		@Override

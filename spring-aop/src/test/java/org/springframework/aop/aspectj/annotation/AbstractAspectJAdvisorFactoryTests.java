@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -58,8 +58,14 @@ import org.springframework.tests.sample.beans.ITestBean;
 import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.util.ObjectUtils;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Abstract tests for AspectJAdvisorFactory.
@@ -758,7 +764,7 @@ public abstract class AbstractAspectJAdvisorFactoryTests {
 
 		@Around(value="setAge(age)",argNames="age")
 		// @ArgNames({"age"})	// AMC needs more work here? ignoring pjp arg... ok??
-		// argNames should be suported in Around as it is in Pointcut
+		// argNames should be supported in Around as it is in Pointcut
 		public void changeReturnType(ProceedingJoinPoint pjp, int age) throws Throwable {
 			pjp.proceed(new Object[] {age*2});
 		}
@@ -884,12 +890,12 @@ public abstract class AbstractAspectJAdvisorFactoryTests {
 @Aspect
 abstract class AbstractMakeModifiable {
 
-	public interface MutableModifable extends Modifiable {
+	public interface MutableModifiable extends Modifiable {
 
 		void markDirty();
 	}
 
-	public static class ModifiableImpl implements MutableModifable {
+	public static class ModifiableImpl implements MutableModifiable {
 
 		private boolean modified;
 
@@ -911,7 +917,7 @@ abstract class AbstractMakeModifiable {
 
 	@Before(value="execution(void set*(*)) && this(modifiable) && args(newValue)", argNames="modifiable,newValue")
 	public void recordModificationIfSetterArgumentDiffersFromOldValue(
-			JoinPoint jp, MutableModifable mixin, Object newValue) {
+			JoinPoint jp, MutableModifiable mixin, Object newValue) {
 
 		/*
 		 * We use the mixin to check and, if necessary, change,
@@ -972,7 +978,7 @@ class MakeITestBeanModifiable extends AbstractMakeModifiable {
 
 	@DeclareParents(value = "org.springframework.tests.sample.beans.ITestBean+",
 			defaultImpl=ModifiableImpl.class)
-	public static MutableModifable mixin;
+	public static MutableModifiable mixin;
 
 }
 

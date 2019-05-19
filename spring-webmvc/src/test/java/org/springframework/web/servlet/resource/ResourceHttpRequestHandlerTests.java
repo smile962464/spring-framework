@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,8 +42,14 @@ import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.accept.ContentNegotiationManagerFactoryBean;
 import org.springframework.web.servlet.HandlerMapping;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for {@link ResourceHttpRequestHandler}.
@@ -309,10 +315,10 @@ public class ResourceHttpRequestHandlerTests {
 		// Use mock ResourceResolver: i.e. we're only testing upfront validations...
 
 		Resource resource = mock(Resource.class);
-		when(resource.getFilename()).thenThrow(new AssertionError("Resource should not be resolved"));
-		when(resource.getInputStream()).thenThrow(new AssertionError("Resource should not be resolved"));
+		given(resource.getFilename()).willThrow(new AssertionError("Resource should not be resolved"));
+		given(resource.getInputStream()).willThrow(new AssertionError("Resource should not be resolved"));
 		ResourceResolver resolver = mock(ResourceResolver.class);
-		when(resolver.resolveResource(any(), any(), any(), any())).thenReturn(resource);
+		given(resolver.resolveResource(any(), any(), any(), any())).willReturn(resource);
 
 		ResourceHttpRequestHandler handler = new ResourceHttpRequestHandler();
 		handler.setLocations(Collections.singletonList(new ClassPathResource("test/", getClass())));
@@ -494,8 +500,7 @@ public class ResourceHttpRequestHandlerTests {
 	public void directoryInJarFile() throws Exception {
 		this.request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, "underscorejs/");
 		this.handler.handleRequest(this.request, this.response);
-		assertEquals(200, this.response.getStatus());
-		assertEquals(0, this.response.getContentLength());
+		assertEquals(404, this.response.getStatus());
 	}
 
 	@Test

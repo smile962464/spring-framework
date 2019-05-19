@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,22 +24,49 @@ package org.springframework.expression.spel.ast;
  */
 public enum TypeCode {
 
+	/**
+	 * An {@link Object}.
+	 */
 	OBJECT(Object.class),
 
+	/**
+	 * A {@code boolean}.
+	 */
 	BOOLEAN(Boolean.TYPE),
 
+	/**
+	 * A {@code byte}.
+	 */
 	BYTE(Byte.TYPE),
 
+	/**
+	 * A {@code char}.
+	 */
 	CHAR(Character.TYPE),
 
+	/**
+	 * A {@code double}.
+	 */
 	DOUBLE(Double.TYPE),
 
+	/**
+	 * A {@code float}.
+	 */
 	FLOAT(Float.TYPE),
 
+	/**
+	 * An {@code int}.
+	 */
 	INT(Integer.TYPE),
 
+	/**
+	 * A {@code long}.
+	 */
 	LONG(Long.TYPE),
 
+	/**
+	 * An {@link Object}.
+	 */
 	SHORT(Short.TYPE);
 
 

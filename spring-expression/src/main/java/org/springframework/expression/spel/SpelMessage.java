@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,13 +45,13 @@ public enum SpelMessage {
 			"A problem occurred whilst attempting to construct an object of type ''{0}'' using arguments ''{1}''"),
 
 	METHOD_NOT_FOUND(Kind.ERROR, 1004,
-			"Method call: Method {0} cannot be found on {1} type"),
+			"Method call: Method {0} cannot be found on type {1}"),
 
 	TYPE_NOT_FOUND(Kind.ERROR, 1005,
 			"Type cannot be found ''{0}''"),
 
 	FUNCTION_NOT_DEFINED(Kind.ERROR, 1006,
-			"The function ''{0}'' could not be found"),
+			"Function ''{0}'' could not be found"),
 
 	PROPERTY_OR_FIELD_NOT_READABLE_ON_NULL(Kind.ERROR, 1007,
 			"Property or field ''{0}'' cannot be found on null"),
@@ -293,6 +293,9 @@ public enum SpelMessage {
 	}
 
 
+	/**
+	 * Message kinds.
+	 */
 	public enum Kind { INFO, WARNING, ERROR }
 
 }

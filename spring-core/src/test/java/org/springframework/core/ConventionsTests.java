@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,16 +25,15 @@ import java.util.Set;
 
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.tests.sample.objects.TestObject;
 import org.springframework.util.ClassUtils;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for {@link Conventions}.
@@ -43,10 +42,6 @@ import static org.junit.Assert.*;
  * @author Sam Brannen
  */
 public class ConventionsTests {
-
-	@Rule
-	public final ExpectedException exception = ExpectedException.none();
-
 
 	@Test
 	public void simpleObject() {
@@ -76,8 +71,8 @@ public class ConventionsTests {
 
 	@Test
 	public void emptyList() {
-		this.exception.expect(IllegalArgumentException.class);
-		Conventions.getVariableName(new ArrayList<>());
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				Conventions.getVariableName(new ArrayList<>()));
 	}
 
 	@Test

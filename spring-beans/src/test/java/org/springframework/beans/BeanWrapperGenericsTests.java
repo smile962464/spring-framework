@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,7 +39,9 @@ import org.springframework.tests.sample.beans.GenericIntegerBean;
 import org.springframework.tests.sample.beans.GenericSetOfIntegerBean;
 import org.springframework.tests.sample.beans.TestBean;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @author Juergen Hoeller
@@ -84,7 +86,7 @@ public class BeanWrapperGenericsTests {
 			fail("Should have thrown TypeMismatchException");
 		}
 		catch (TypeMismatchException ex) {
-			assertTrue(ex.getMessage().indexOf("java.lang.Integer") != -1);
+			assertTrue(ex.getMessage().contains("java.lang.Integer"));
 		}
 	}
 
@@ -158,7 +160,7 @@ public class BeanWrapperGenericsTests {
 		GenericBean<?> gb = new GenericBean<>();
 		BeanWrapper bw = new BeanWrapperImpl(gb);
 		bw.registerCustomEditor(Number.class, new CustomNumberEditor(Integer.class, false));
-		Map<String, Collection> input = new HashMap<>();
+		Map<String, Collection<?>> input = new HashMap<>();
 		HashSet<Integer> value1 = new HashSet<>();
 		value1.add(new Integer(1));
 		input.put("1", value1);
@@ -505,6 +507,7 @@ public class BeanWrapperGenericsTests {
 			public Holder(D data) {
 				this.data = data;
 			}
+			@SuppressWarnings("unused")
 			public D getData() {
 				return this.data;
 			}
@@ -644,25 +647,25 @@ public class BeanWrapperGenericsTests {
 
 	public interface ObjectWithId<T extends Comparable<T>> {
 
-	  T getId();
+		T getId();
 
-	  void setId(T aId);
+		void setId(T aId);
 	}
 
 
 	public class Promotion implements ObjectWithId<Long> {
 
-	  private Long id;
+		private Long id;
 
-	  @Override
-	  public Long getId() {
-		  return id;
-	  }
+		@Override
+		public Long getId() {
+			return id;
+		}
 
-	  @Override
-	  public void setId(Long aId) {
-		  this.id = aId;
-	  }
+		@Override
+		public void setId(Long aId) {
+			this.id = aId;
+		}
 	}
 
 }

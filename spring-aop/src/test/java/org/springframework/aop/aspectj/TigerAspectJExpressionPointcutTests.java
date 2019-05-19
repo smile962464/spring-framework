@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,9 +26,11 @@ import org.junit.Test;
 import test.annotation.EmptySpringAnnotation;
 import test.annotation.transaction.Tx;
 
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.tests.sample.beans.TestBean;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Java 5 specific {@link AspectJExpressionPointcutTests}.
@@ -73,7 +75,7 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testMatchVarargs() throws SecurityException, NoSuchMethodException {
+	public void testMatchVarargs() throws Exception {
 
 		@SuppressWarnings("unused")
 		class MyTemplate {
@@ -99,19 +101,19 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testMatchAnnotationOnClassWithAtWithin() throws SecurityException, NoSuchMethodException {
+	public void testMatchAnnotationOnClassWithAtWithin() throws Exception {
 		String expression = "@within(test.annotation.transaction.Tx)";
 		testMatchAnnotationOnClass(expression);
 	}
 
 	@Test
-	public void testMatchAnnotationOnClassWithoutBinding() throws SecurityException, NoSuchMethodException {
+	public void testMatchAnnotationOnClassWithoutBinding() throws Exception {
 		String expression = "within(@test.annotation.transaction.Tx *)";
 		testMatchAnnotationOnClass(expression);
 	}
 
 	@Test
-	public void testMatchAnnotationOnClassWithSubpackageWildcard() throws SecurityException, NoSuchMethodException {
+	public void testMatchAnnotationOnClassWithSubpackageWildcard() throws Exception {
 		String expression = "within(@(test.annotation..*) *)";
 		AspectJExpressionPointcut springAnnotatedPc = testMatchAnnotationOnClass(expression);
 		assertFalse(springAnnotatedPc.matches(TestBean.class.getMethod("setName", String.class), TestBean.class));
@@ -123,12 +125,12 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testMatchAnnotationOnClassWithExactPackageWildcard() throws SecurityException, NoSuchMethodException {
+	public void testMatchAnnotationOnClassWithExactPackageWildcard() throws Exception {
 		String expression = "within(@(test.annotation.transaction.*) *)";
 		testMatchAnnotationOnClass(expression);
 	}
 
-	private AspectJExpressionPointcut testMatchAnnotationOnClass(String expression) throws SecurityException, NoSuchMethodException {
+	private AspectJExpressionPointcut testMatchAnnotationOnClass(String expression) throws Exception {
 		AspectJExpressionPointcut ajexp = new AspectJExpressionPointcut();
 		ajexp.setExpression(expression);
 
@@ -141,7 +143,7 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testAnnotationOnMethodWithFQN() throws SecurityException, NoSuchMethodException {
+	public void testAnnotationOnMethodWithFQN() throws Exception {
 		String expression = "@annotation(test.annotation.transaction.Tx)";
 		AspectJExpressionPointcut ajexp = new AspectJExpressionPointcut();
 		ajexp.setExpression(expression);
@@ -155,7 +157,31 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testAnnotationOnMethodWithWildcard() throws SecurityException, NoSuchMethodException {
+	public void testAnnotationOnCglibProxyMethod() throws Exception {
+		String expression = "@annotation(test.annotation.transaction.Tx)";
+		AspectJExpressionPointcut ajexp = new AspectJExpressionPointcut();
+		ajexp.setExpression(expression);
+
+		ProxyFactory factory = new ProxyFactory(new BeanA());
+		factory.setProxyTargetClass(true);
+		BeanA proxy = (BeanA) factory.getProxy();
+		assertTrue(ajexp.matches(BeanA.class.getMethod("getAge"), proxy.getClass()));
+	}
+
+	@Test
+	public void testAnnotationOnDynamicProxyMethod() throws Exception {
+		String expression = "@annotation(test.annotation.transaction.Tx)";
+		AspectJExpressionPointcut ajexp = new AspectJExpressionPointcut();
+		ajexp.setExpression(expression);
+
+		ProxyFactory factory = new ProxyFactory(new BeanA());
+		factory.setProxyTargetClass(false);
+		IBeanA proxy = (IBeanA) factory.getProxy();
+		assertTrue(ajexp.matches(IBeanA.class.getMethod("getAge"), proxy.getClass()));
+	}
+
+	@Test
+	public void testAnnotationOnMethodWithWildcard() throws Exception {
 		String expression = "execution(@(test.annotation..*) * *(..))";
 		AspectJExpressionPointcut anySpringMethodAnnotation = new AspectJExpressionPointcut();
 		anySpringMethodAnnotation.setExpression(expression);
@@ -171,7 +197,7 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testAnnotationOnMethodArgumentsWithFQN() throws SecurityException, NoSuchMethodException {
+	public void testAnnotationOnMethodArgumentsWithFQN() throws Exception {
 		String expression = "@args(*, test.annotation.EmptySpringAnnotation))";
 		AspectJExpressionPointcut takesSpringAnnotatedArgument2 = new AspectJExpressionPointcut();
 		takesSpringAnnotatedArgument2.setExpression(expression);
@@ -201,7 +227,7 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 	@Test
-	public void testAnnotationOnMethodArgumentsWithWildcards() throws SecurityException, NoSuchMethodException {
+	public void testAnnotationOnMethodArgumentsWithWildcards() throws Exception {
 		String expression = "execution(* *(*, @(test..*) *))";
 		AspectJExpressionPointcut takesSpringAnnotatedArgument2 = new AspectJExpressionPointcut();
 		takesSpringAnnotatedArgument2.setExpression(expression);
@@ -266,7 +292,14 @@ public class TigerAspectJExpressionPointcutTests {
 	}
 
 
-	static class BeanA {
+	interface IBeanA {
+
+		@Tx
+		int getAge();
+	}
+
+
+	static class BeanA implements IBeanA {
 
 		private String name;
 
@@ -277,6 +310,7 @@ public class TigerAspectJExpressionPointcutTests {
 		}
 
 		@Tx
+		@Override
 		public int getAge() {
 			return age;
 		}

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,9 +42,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -53,10 +51,22 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.core.ResolvableType.VariableResolver;
 import org.springframework.util.MultiValueMap;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link ResolvableType}.
@@ -68,9 +78,6 @@ import static org.mockito.BDDMockito.*;
 @SuppressWarnings("rawtypes")
 @RunWith(MockitoJUnitRunner.class)
 public class ResolvableTypeTests {
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Captor
 	private ArgumentCaptor<TypeVariable<?>> typeVariableCaptor;
@@ -137,9 +144,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forInstanceMustNotBeNull() {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Instance must not be null");
-		ResolvableType.forInstance(null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forInstance(null))
+			.withMessageContaining("Instance must not be null");
 	}
 
 	@Test
@@ -190,9 +197,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forFieldMustNotBeNull() throws Exception {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Field must not be null");
-		ResolvableType.forField(null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forField(null))
+			.withMessageContaining("Field must not be null");
 	}
 
 	@Test
@@ -204,9 +211,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forConstructorParameterMustNotBeNull() throws Exception {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Constructor must not be null");
-		ResolvableType.forConstructorParameter(null, 0);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forConstructorParameter(null, 0))
+			.withMessageContaining("Constructor must not be null");
 	}
 
 	@Test
@@ -218,9 +225,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forMethodParameterByIndexMustNotBeNull() throws Exception {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Method must not be null");
-		ResolvableType.forMethodParameter(null, 0);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forMethodParameter(null, 0))
+			.withMessageContaining("Method must not be null");
 	}
 
 	@Test
@@ -256,9 +263,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forMethodParameterMustNotBeNull() throws Exception {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("MethodParameter must not be null");
-		ResolvableType.forMethodParameter(null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forMethodParameter(null))
+			.withMessageContaining("MethodParameter must not be null");
 	}
 
 	@Test  // SPR-16210
@@ -283,9 +290,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forMethodReturnMustNotBeNull() throws Exception {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Method must not be null");
-		ResolvableType.forMethodReturnType(null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forMethodReturnType(null))
+			.withMessageContaining("Method must not be null");
 	}
 
 	@Test
@@ -431,7 +438,7 @@ public class ResolvableTypeTests {
 			interfaces.add(interfaceType.toString());
 		}
 		assertThat(interfaces.toString(), equalTo(
-				  "["
+				"["
 				+ "java.io.Serializable, "
 				+ "java.lang.Cloneable, "
 				+ "java.util.List<java.lang.CharSequence>, "
@@ -619,7 +626,7 @@ public class ResolvableTypeTests {
 		ResolvableType type = ResolvableType.forField(Fields.class.getField("variableTypeGenericArray"));
 		assertThat(type.getType().toString(), equalTo("T[]"));
 		assertThat(type.isArray(), equalTo(true));
-		assertThat(type.resolve(Object.class), equalTo((Class) Object.class));
+		assertThat(type.toClass(), equalTo((Class) Object.class));
 	}
 
 	@Test
@@ -962,9 +969,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void isAssignableFromMustNotBeNull() throws Exception {
-		this.thrown.expect(IllegalArgumentException.class);
-		this.thrown.expectMessage("Type must not be null");
-		ResolvableType.forClass(Object.class).isAssignableFrom((ResolvableType) null);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forClass(Object.class).isAssignableFrom((ResolvableType) null))
+			.withMessageContaining("Type must not be null");
 	}
 
 	@Test
@@ -1225,9 +1232,9 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void forClassWithMismatchedGenerics() throws Exception {
-		thrown.expect(IllegalArgumentException.class);
-		thrown.expectMessage("Mismatched number of generics specified");
-		ResolvableType.forClassWithGenerics(Map.class, Integer.class);
+		assertThatIllegalArgumentException().isThrownBy(() ->
+				ResolvableType.forClassWithGenerics(Map.class, Integer.class))
+			.withMessageContaining("Mismatched number of generics specified");
 	}
 
 	@Test
@@ -1246,8 +1253,6 @@ public class ResolvableTypeTests {
 		testSerialization(ResolvableType.forMethodReturnType(Methods.class.getMethod("charSequenceReturn")));
 		testSerialization(ResolvableType.forConstructorParameter(Constructors.class.getConstructor(List.class), 0));
 		testSerialization(ResolvableType.forField(Fields.class.getField("charSequenceList")).getGeneric());
-		testSerialization(ResolvableType.forField(Fields.class.getField("charSequenceList")).asCollection());
-		testSerialization(ResolvableType.forClass(ExtendsMap.class).getSuperType());
 		ResolvableType deserializedNone = testSerialization(ResolvableType.NONE);
 		assertThat(deserializedNone, sameInstance(ResolvableType.NONE));
 	}

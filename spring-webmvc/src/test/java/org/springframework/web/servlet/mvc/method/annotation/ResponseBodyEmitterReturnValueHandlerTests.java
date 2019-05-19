@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,6 +40,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.async.AsyncWebRequest;
 import org.springframework.web.context.request.async.StandardServletAsyncWebRequest;
+import org.springframework.web.context.request.async.WebAsyncManager;
 import org.springframework.web.context.request.async.WebAsyncUtils;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
@@ -47,8 +48,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -204,7 +206,6 @@ public class ResponseBodyEmitterReturnValueHandlerTests {
 
 		assertTrue(this.request.isAsyncStarted());
 		assertEquals(200, this.response.getStatus());
-		assertEquals("text/event-stream;charset=UTF-8", this.response.getContentType());
 
 		SimpleBean bean1 = new SimpleBean();
 		bean1.setId(1L);
@@ -217,6 +218,7 @@ public class ResponseBodyEmitterReturnValueHandlerTests {
 		emitter.send(SseEmitter.event().
 				comment("a test").name("update").id("1").reconnectTime(5000L).data(bean1).data(bean2));
 
+		assertEquals("text/event-stream;charset=UTF-8", this.response.getContentType());
 		assertEquals(":a test\n" +
 						"event:update\n" +
 						"id:1\n" +
@@ -237,21 +239,43 @@ public class ResponseBodyEmitterReturnValueHandlerTests {
 
 		assertTrue(this.request.isAsyncStarted());
 		assertEquals(200, this.response.getStatus());
-		assertEquals("text/event-stream;charset=UTF-8", this.response.getContentType());
 
 		processor.onNext("foo");
 		processor.onNext("bar");
 		processor.onNext("baz");
 		processor.onComplete();
 
+		assertEquals("text/event-stream;charset=UTF-8", this.response.getContentType());
 		assertEquals("data:foo\n\ndata:bar\n\ndata:baz\n\n", this.response.getContentAsString());
+	}
+
+	@Test // gh-21972
+	public void responseBodyFluxWithError() throws Exception {
+
+		this.request.addHeader("Accept", "text/event-stream");
+
+		MethodParameter type = on(TestController.class).resolveReturnType(Flux.class, String.class);
+		EmitterProcessor<String> processor = EmitterProcessor.create();
+		this.handler.handleReturnValue(processor, type, this.mavContainer, this.webRequest);
+
+		assertTrue(this.request.isAsyncStarted());
+
+		IllegalStateException ex = new IllegalStateException("wah wah");
+		processor.onError(ex);
+		processor.onComplete();
+
+		WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(this.webRequest);
+		assertSame(ex, asyncManager.getConcurrentResult());
+		assertNull(this.response.getContentType());
 	}
 
 	@Test
 	public void responseEntitySse() throws Exception {
 		MethodParameter type = on(TestController.class).resolveReturnType(ResponseEntity.class, SseEmitter.class);
-		ResponseEntity<SseEmitter> entity = ResponseEntity.ok().header("foo", "bar").body(new SseEmitter());
+		SseEmitter emitter = new SseEmitter();
+		ResponseEntity<SseEmitter> entity = ResponseEntity.ok().header("foo", "bar").body(emitter);
 		this.handler.handleReturnValue(entity, type, this.mavContainer, this.webRequest);
+		emitter.complete();
 
 		assertTrue(this.request.isAsyncStarted());
 		assertEquals(200, this.response.getStatus());
@@ -281,14 +305,29 @@ public class ResponseBodyEmitterReturnValueHandlerTests {
 
 		assertTrue(this.request.isAsyncStarted());
 		assertEquals(200, this.response.getStatus());
-		assertEquals("text/plain", this.response.getContentType());
 
 		processor.onNext("foo");
 		processor.onNext("bar");
 		processor.onNext("baz");
 		processor.onComplete();
 
+		assertEquals("text/plain", this.response.getContentType());
 		assertEquals("foobarbaz", this.response.getContentAsString());
+	}
+
+	@Test // SPR-17076
+	public void responseEntityFluxWithCustomHeader() throws Exception {
+
+		EmitterProcessor<SimpleBean> processor = EmitterProcessor.create();
+		ResponseEntity<Flux<SimpleBean>> entity = ResponseEntity.ok().header("x-foo", "bar").body(processor);
+		ResolvableType bodyType = forClassWithGenerics(Flux.class, SimpleBean.class);
+		MethodParameter type = on(TestController.class).resolveReturnType(ResponseEntity.class, bodyType);
+		this.handler.handleReturnValue(entity, type, this.mavContainer, this.webRequest);
+
+		assertTrue(this.request.isAsyncStarted());
+		assertEquals(200, this.response.getStatus());
+		assertEquals("bar", this.response.getHeader("x-foo"));
+		assertFalse(this.response.isCommitted());
 	}
 
 
@@ -313,6 +352,7 @@ public class ResponseBodyEmitterReturnValueHandlerTests {
 
 		private ResponseEntity<Flux<String>> h9() { return null; }
 
+		private ResponseEntity<Flux<SimpleBean>> h10() { return null; }
 	}
 
 
